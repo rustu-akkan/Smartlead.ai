@@ -6,13 +6,7 @@ from chatbot_routes import chatbot_bp
 
 app = Flask(__name__)
 
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["https://rustuakkan7.wixstudio.com"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "ngrok-skip-browser-warning"]
-    }
-}, supports_credentials=True)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 init_db(app)
 app.register_blueprint(chatbot_bp)
