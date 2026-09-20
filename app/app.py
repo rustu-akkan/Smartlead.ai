@@ -6,7 +6,16 @@ from chatbot_routes import chatbot_bp
 
 app = Flask(__name__)
 
+# Standart CORS tanımlaması
 CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Preflight (OPTIONS) ve CORS başlıklarını garantilemek için ek güvenlik kancası:
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+    return response
 
 init_db(app)
 app.register_blueprint(chatbot_bp)
