@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from chatbot_db import chatbot_lead_kaydet
+from app.chatbot_db import chatbot_lead_kaydet
 import re
 import os
 import requests
