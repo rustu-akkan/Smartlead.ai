@@ -20,6 +20,12 @@ def add_cors_headers(response):
 init_db(app)
 app.register_blueprint(chatbot_bp)
 
+# OPTIONS preflight isteklerinin her rotada takılmadan 200 dönmesi için genel yakalayıcı
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        return '', 200
+
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json() or {}
