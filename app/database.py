@@ -136,3 +136,15 @@ def kullanici_aktivite_logla(user_id, page_visited, duration=0):
     )
     conn.commit()
     conn.close()
+
+def chatbot_lead_kaydet(ad_soyad, telefon, mail):
+    conn = baglanti_kur()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO kullanicilar (ad_soyad, telefon, mail, sifre_hash, role) VALUES (?, ?, ?, ?, ?)",
+        (ad_soyad, telefon, mail, "lead_kullanicisi", "lead")
+    )
+    lead_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return lead_id
