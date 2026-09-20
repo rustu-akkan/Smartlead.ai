@@ -60,6 +60,9 @@ def login():
     user = cursor.fetchone()
     conn.close()
     
+    if not user:
+        return jsonify({"success": False, "message": "Hatalı bilgi veya şifre."}), 401
+    
     hash_key = "sifre_hash" if "sifre_hash" in user.keys() else "s_hashing"
     
     if user and check_password_hash(user[hash_key], sifre):
