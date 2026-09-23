@@ -20,7 +20,7 @@ def init_db(app):
         
         cursor.executescript("""
             -- 1. ADIM: ESKİ TABLOYU KOMPLE SİL
-            DROP TABLE IF EXISTS kullanicilar;
+            
 
             -- 2. ADIM: YENİ TABLOYU ŞİFRE ZORUNLULUĞU OLMADAN KUR
             CREATE TABLE IF NOT EXISTS kullanicilar (
