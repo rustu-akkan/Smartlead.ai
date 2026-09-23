@@ -19,12 +19,16 @@ def init_db(app):
         cursor = conn.cursor()
         
         cursor.executescript("""
+            -- 1. ADIM: ESKİ TABLOYU KOMPLE SİL
+            DROP TABLE IF EXISTS kullanicilar;
+
+            -- 2. ADIM: YENİ TABLOYU ŞİFRE ZORUNLULUĞU OLMADAN KUR
             CREATE TABLE IF NOT EXISTS kullanicilar (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ad_soyad TEXT NOT NULL,
                 telefon TEXT UNIQUE NOT NULL,
                 mail TEXT UNIQUE NOT NULL,
-                sifre_hash TEXT NOT NULL,
+                sifre_hash TEXT,  -- DİKKAT: 'NOT NULL' kuralını kaldırdık!
                 role TEXT NOT NULL DEFAULT 'user',
                 is_online BOOLEAN DEFAULT 0,
                 last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -140,10 +144,13 @@ def kullanici_aktivite_logla(user_id, page_visited, duration=0):
 def chatbot_lead_kaydet(ad_soyad, telefon, mail):
     conn = baglanti_kur()
     cursor = conn.cursor()
+    
+    # sifre_hash'i tamamen çıkardık, çünkü veritabanında gerçekten yok!
     cursor.execute(
-        "INSERT INTO kullanicilar (ad_soyad, telefon, mail, sifre_hash, role) VALUES (?, ?, ?, ?, ?)",
-        (ad_soyad, telefon, mail, "lead_kullanicisi", "lead")
+        "INSERT INTO kullanicilar (ad_soyad, telefon, mail, role) VALUES (?, ?, ?, ?)",
+        (ad_soyad, telefon, mail, "lead")
     )
+    
     lead_id = cursor.lastrowid
     conn.commit()
     conn.close()
