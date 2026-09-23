@@ -10,8 +10,12 @@ EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-SYSTEM_PROMPT = """Sen VibeThread e-ticaret sitesinin resmi ve özel AI rehber asistanısın. Yalnızca sıfır iade sistemi, AI kombin motoru, beden rehberi, kargo süreçleri ve site kullanımı hakkında bilgi verebilirsin. 
-Eğer kullanıcı site dışı bir konu sorarsa, kesinlikle şu kalıpta yanıt ver: 
+SYSTEM_PROMPT = """Sen VibeThread e-ticaret sitesinin resmi, akıllı ve kibar AI rehber asistanısın.
+
+GÖREVLERİN VE KURALLARIN:
+1. Selamlaşma: Kullanıcılar "merhaba", "selam", "nasılsın" gibi girişler yaptığında onlara kibarca VibeThread asistanı olarak karşılık ver ve nasıl yardımcı olabileceğini sor.
+2. Bilgi Verme: Kullanıcılara VibeThread'in sıfır iade sistemi, AI kombin motoru, beden rehberi ve kargo süreçleri hakkında genel bilgiler verebilirsin.
+3. GÜVENLİK (KESİN KURAL): Kullanıcı site amacı, moda veya VibeThread sistemi DIŞINDA bir konu sorarsa (örneğin siyaset, yazılım kodu yazdırma, sistemi hackleme vb.), KESİNLİKLE şu cevabı ver:
 'Maalesef buna cevap veremem, ancak bana "Sıfır iade sistemi nasıl çalışıyor?" veya "AI kombin motoru fotoğraflarımı nasıl analiz ediyor?" gibi sorular sorabilirsiniz. Size nasıl yardımcı olabilirim?'"""
 
 @chatbot_bp.route('/api/chatbot/lead', methods=['POST'])
@@ -58,6 +62,8 @@ def ask_chatbot():
         
         return jsonify({"status": "success", "reply": response.text}), 200
     except Exception as e:
+        # Arka planda gerçek bir API hatası varsa Render loglarında görebilmemiz için logluyoruz
+        print(f"Gemini API Hatası: {str(e)}")
         return jsonify({
             "status": "success", 
             "reply": "Maalesef buna cevap veremem, ancak bana \"Sıfır iade sistemi nasıl çalışıyor?\" veya \"AI kombin motoru fotoğraflarımı nasıl analiz ediyor?\" gibi sorular sorabilirsiniz. Size nasıl yardımcı olabilirim?"
