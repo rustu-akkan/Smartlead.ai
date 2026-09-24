@@ -100,9 +100,10 @@ def kullaniciyi_dogrula_veya_kaydet(ad_soyad, telefon, mail, sifre_hash, role="u
             (ad_soyad, mail, sifre_hash, user_id)
         )
     else:
+        # role sütunu kaldırıldı
         cursor.execute(
-            "INSERT INTO kullanicilar (ad_soyad, telefon, mail, sifre_hash, role) VALUES (?, ?, ?, ?, ?)",
-            (ad_soyad, telefon, mail, sifre_hash, role)
+            "INSERT INTO kullanicilar (ad_soyad, telefon, mail, sifre_hash) VALUES (?, ?, ?, ?)",
+            (ad_soyad, telefon, mail, sifre_hash)
         )
         user_id = cursor.lastrowid
         
@@ -145,10 +146,9 @@ def chatbot_lead_kaydet(ad_soyad, telefon, mail):
     conn = baglanti_kur()
     cursor = conn.cursor()
     
-    # sifre_hash'i tamamen çıkardık, çünkü veritabanında gerçekten yok!
     cursor.execute(
-        "INSERT INTO kullanicilar (ad_soyad, telefon, mail, role) VALUES (?, ?, ?, ?)",
-        (ad_soyad, telefon, mail, "lead")
+        "INSERT INTO kullanicilar (ad_soyad, telefon, mail) VALUES (?, ?, ?)",
+        (ad_soyad, telefon, mail)
     )
     
     lead_id = cursor.lastrowid
