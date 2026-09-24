@@ -2,13 +2,11 @@ from flask import Blueprint, request, jsonify
 from app.database import chatbot_lead_kaydet
 import re
 import os
-import google.generativeai as genai
+import requests
 
 chatbot_bp = Blueprint('chatbot_bp', __name__)
 
 EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 SYSTEM_PROMPT = """Sen VibeThread e-ticaret sitesinin resmi, akıllı ve kibar AI rehber asistanısın.
 
@@ -57,13 +55,28 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
-        response = model.generate_content(user_message)
+        api_key = os.getenv("GEMINI_API_KEY")
+        # Doğrudan Google API URL'sine istek atıyoruz (Kütüphane sorunlarını devre dışı bırakır)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={api_key}"
         
-        return jsonify({"status": "success", "reply": response.text}), 200
+        payload = {
+            "contents": [{"parts": [{"text": f"SİSTEM NOTU: {SYSTEM_PROMPT}\n\nKULLANICI MESAJI: {user_message}"}]}]
+        }
+        
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, json=payload, headers=headers)
+        response_data = response.json()
+        
+        # Yanıtı çözümle
+        if "candidates" in response_data:
+            bot_reply = response_data["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"status": "success", "reply": bot_reply}), 200
+        else:
+            print(f"API Yanıt Hatası: {response_data}")
+            raise Exception("Geçersiz API yanıtı")
+            
     except Exception as e:
-        # Arka planda gerçek bir API hatası varsa Render loglarında görebilmemiz için logluyoruz
-        print(f"Gemini API Hatası: {str(e)}")
+        print(f"Yapay Zeka Bağlantı Hatası: {str(e)}")
         return jsonify({
             "status": "success", 
             "reply": "Maalesef buna cevap veremem, ancak bana \"Sıfır iade sistemi nasıl çalışıyor?\" veya \"AI kombin motoru fotoğraflarımı nasıl analiz ediyor?\" gibi sorular sorabilirsiniz. Size nasıl yardımcı olabilirim?"
