@@ -58,11 +58,11 @@ def ask_chatbot():
         api_key = os.getenv("GROQ_API_KEY")
         url = "https://api.groq.com/openai/v1/chat/completions"
         
-        # Groq'un çok hızlı çalışan ve Türkçe bilen Llama-3 modelini kullanıyoruz
+        # SİSTEM NOTUNU VE KISITLAMALARI TAMAMEN KALDIRDIK
         payload = {
             "model": "llama3-8b-8192", 
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": "Sen kibar bir asistansın. Kısa ve öz cevap ver."},
                 {"role": "user", "content": user_message}
             ]
         }
@@ -79,12 +79,12 @@ def ask_chatbot():
             bot_reply = response_data["choices"][0]["message"]["content"]
             return jsonify({"status": "success", "reply": bot_reply}), 200
         else:
-            print(f"Groq API Hatası: {response_data}")
-            raise Exception("Geçersiz API yanıtı")
+            # EĞER GROQ HATA VERİRSE, HATAYI DİREKT SİTEDE ASİSTANIN AĞZINDAN YAZDIR!
+            return jsonify({"status": "success", "reply": f"Groq API Hatası: {response_data}"}), 200
             
     except Exception as e:
-        print(f"Yapay Zeka Bağlantı Hatası: {str(e)}")
+        # KODDA BİR ÇÖKME OLURSA, NEDENİNİ DİREKT SİTEDE YAZDIR!
         return jsonify({
             "status": "success", 
-            "reply": "Maalesef buna cevap veremem, ancak bana \"Sıfır iade sistemi nasıl çalışıyor?\" veya \"AI kombin motoru fotoğraflarımı nasıl analiz ediyor?\" gibi sorular sorabilirsiniz. Size nasıl yardımcı olabilirim?"
+            "reply": f"Sistem Çökme Hatası: {str(e)}"
         }), 200
