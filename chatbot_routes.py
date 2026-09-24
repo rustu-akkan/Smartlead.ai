@@ -55,24 +55,31 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        api_key = os.getenv("GEMINI_API_KEY")
-        # Doğrudan Google API URL'sine istek atıyoruz (Kütüphane sorunlarını devre dışı bırakır)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        api_key = os.getenv("GROQ_API_KEY")
+        url = "https://api.groq.com/openai/v1/chat/completions"
         
+        # Groq'un çok hızlı çalışan ve Türkçe bilen Llama-3 modelini kullanıyoruz
         payload = {
-            "contents": [{"parts": [{"text": f"SİSTEM NOTU: {SYSTEM_PROMPT}\n\nKULLANICI MESAJI: {user_message}"}]}]
+            "model": "llama3-8b-8192", 
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message}
+            ]
         }
         
-        headers = {'Content-Type': 'application/json'}
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        
         response = requests.post(url, json=payload, headers=headers)
         response_data = response.json()
         
-        # Yanıtı çözümle
-        if "candidates" in response_data:
-            bot_reply = response_data["candidates"][0]["content"]["parts"][0]["text"]
+        if "choices" in response_data:
+            bot_reply = response_data["choices"][0]["message"]["content"]
             return jsonify({"status": "success", "reply": bot_reply}), 200
         else:
-            print(f"API Yanıt Hatası: {response_data}")
+            print(f"Groq API Hatası: {response_data}")
             raise Exception("Geçersiz API yanıtı")
             
     except Exception as e:
