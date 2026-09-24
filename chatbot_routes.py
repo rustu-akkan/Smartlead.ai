@@ -57,7 +57,7 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=SYSTEM_PROMPT)
+        model = genai.GenerativeModel('gemini-pro')
         response = model.generate_content(user_message)
         
         return jsonify({"status": "success", "reply": response.text}), 200
