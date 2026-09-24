@@ -57,7 +57,7 @@ def ask_chatbot():
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         # Doğrudan Google API URL'sine istek atıyoruz (Kütüphane sorunlarını devre dışı bırakır)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
         payload = {
             "contents": [{"parts": [{"text": f"SİSTEM NOTU: {SYSTEM_PROMPT}\n\nKULLANICI MESAJI: {user_message}"}]}]
