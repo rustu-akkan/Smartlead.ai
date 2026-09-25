@@ -58,16 +58,13 @@ def ask_chatbot():
         api_key = os.getenv("GROQ_API_KEY")
         url = "https://api.groq.com/openai/v1/chat/completions"
         
-        # SİSTEM NOTUNU VE KISITLAMALARI TAMAMEN KALDIRDIK
-        # Groq'un en güncel ve hızlı Llama 3.1 modelini kullanıyoruz
         payload = {
-            "model": "llama-3.1-8b-instant", 
+            "model": "mixtral-8x7b-32768", 
             "messages": [
                 {"role": "system", "content": "Sen kibar bir asistansın. Kısa ve öz cevap ver."},
                 {"role": "user", "content": user_message}
             ]
-        }
-        
+        }        
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
