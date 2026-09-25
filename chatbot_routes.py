@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.database import chatbot_lead_kaydet
 import re
 import os
-import requests
+import google.generativeai as genai
 
 chatbot_bp = Blueprint('chatbot_bp', __name__)
 
@@ -55,34 +55,28 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        api_key = os.getenv("GROQ_API_KEY")
-        url = "https://api.groq.com/openai/v1/chat/completions"
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return jsonify({
+                "status": "success", 
+                "reply": "Sistem Hatası: Render panelinde GEMINI_API_KEY tanımlanmamış."
+            }), 200
+
+        genai.configure(api_key=api_key)
         
-        payload = {
-            "model": "mixtral-8x7b-32768", 
-            "messages": [
-                {"role": "system", "content": "Sen kibar bir asistansın. Kısa ve öz cevap ver."},
-                {"role": "user", "content": user_message}
-            ]
-        }        
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
-        }
+        # Kararlı, ücretsiz ve hızlı Gemini 1.5 Flash modeli
+        model = genai.GenerativeModel(
+            model_name='gemini-1.5-flash',
+            system_instruction=SYSTEM_PROMPT
+        )
         
-        response = requests.post(url, json=payload, headers=headers)
-        response_data = response.json()
+        response = model.generate_content(user_message)
+        bot_reply = response.text.strip()
         
-        if "choices" in response_data:
-            bot_reply = response_data["choices"][0]["message"]["content"]
-            return jsonify({"status": "success", "reply": bot_reply}), 200
-        else:
-            # EĞER GROQ HATA VERİRSE, HATAYI DİREKT SİTEDE ASİSTANIN AĞZINDAN YAZDIR!
-            return jsonify({"status": "success", "reply": f"Groq API Hatası: {response_data}"}), 200
+        return jsonify({"status": "success", "reply": bot_reply}), 200
             
     except Exception as e:
-        # KODDA BİR ÇÖKME OLURSA, NEDENİNİ DİREKT SİTEDE YAZDIR!
         return jsonify({
             "status": "success", 
-            "reply": f"Sistem Çökme Hatası: {str(e)}"
+            "reply": f"Gemini API Hatası: {str(e)}"
         }), 200
