@@ -55,34 +55,32 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
-            return jsonify({
-                "status": "error", 
-                "reply": "Sistem Hatası: Render panelinde GEMINI_API_KEY tanımlanmamış."
-            }), 200
+            return jsonify({"status": "success", "reply": "Sistem Hatası: Render'da GROQ_API_KEY bulunamadı."}), 200
 
-        # KÜTÜPHANE KULLANMADAN DİREKT GOOGLE'A BAĞLANIYORUZ
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-        
-        headers = {'Content-Type': 'application/json'}
-        
-        # Sistem promptunu ve kullanıcı mesajını birleştiriyoruz
-        full_prompt = f"{SYSTEM_PROMPT}\n\nKullanıcı: {user_message}\nAsistan:"
+        url = "https://api.groq.com/openai/v1/chat/completions"
         
         payload = {
-            "contents": [{"parts": [{"text": full_prompt}]}]
+            "model": "llama3-8b-8192", 
+            "messages": [
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_message}
+            ]
+        }        
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
         }
         
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, json=payload, headers=headers)
         response_data = response.json()
         
-        # Yanıtı JSON içinden güvenle çekiyoruz
-        if "candidates" in response_data:
-            bot_reply = response_data["candidates"][0]["content"]["parts"][0]["text"]
+        if "choices" in response_data:
+            bot_reply = response_data["choices"][0]["message"]["content"]
             return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
         else:
-            return jsonify({"status": "success", "reply": f"API Hata Döndürdü: {response_data}"}), 200
+            return jsonify({"status": "success", "reply": f"API Hatası: {response_data}"}), 200
             
     except Exception as e:
         return jsonify({
