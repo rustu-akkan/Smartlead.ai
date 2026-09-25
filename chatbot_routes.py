@@ -64,13 +64,13 @@ def ask_chatbot():
 
         genai.configure(api_key=api_key)
         
-        # Kararlı, ücretsiz ve hızlı Gemini 1.5 Flash modeli
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
-            system_instruction=SYSTEM_PROMPT
-        )
+        # Tüm SDK sürümleriyle %100 uyumlu ve sorunsuz çalışan model
+        model = genai.GenerativeModel('gemini-pro')
         
-        response = model.generate_content(user_message)
+        # Sistem notunu manuel olarak birleştiriyoruz (eski sürüm uyumluluğu için)
+        full_prompt = f"{SYSTEM_PROMPT}\n\nKullanıcı: {user_message}\nAsistan:"
+        
+        response = model.generate_content(full_prompt)
         bot_reply = response.text.strip()
         
         return jsonify({"status": "success", "reply": bot_reply}), 200
