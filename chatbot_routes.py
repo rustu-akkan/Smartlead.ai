@@ -59,14 +59,27 @@ def ask_chatbot():
         if not api_key:
             return jsonify({"status": "success", "reply": "Sistem Hatası: Render'da GROQ_API_KEY bulunamadı."}), 200
 
-        url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
         
-        # KESİN ÇÖZÜM: Hata almamak için 3 farklı aktif modeli sırayla deniyoruz
-        aktif_modeller = ["llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"]
+        # --- ZEKİCE ÇÖZÜM: TAHMİN ETMEYİ BIRAKIYORUZ ---
+        # 1. Groq'a "Şu an benim API anahtarıma açık olan modeller neler?" diye soruyoruz
+        models_url = "https://api.groq.com/openai/v1/models"
+        models_response = requests.get(models_url, headers=headers)
+        models_data = models_response.json()
+        
+        aktif_modeller = []
+        if "data" in models_data:
+            # Bize izin verdiği tüm modellerin isimlerini alıyoruz (ses işleyen whisper hariç)
+            aktif_modeller = [m["id"] for m in models_data["data"] if "whisper" not in m["id"].lower()]
+        
+        if not aktif_modeller:
+            return jsonify({"status": "success", "reply": "Groq API hesabınızda kullanılabilir model bulunamadı."}), 200
+
+        # 2. Groq'un bize verdiği bu "kesin yetkimiz olan" modelleri sırayla deniyoruz
+        url = "https://api.groq.com/openai/v1/chat/completions"
         son_hata = ""
         
         for model_ismi in aktif_modeller:
@@ -81,15 +94,16 @@ def ask_chatbot():
             response = requests.post(url, json=payload, headers=headers)
             response_data = response.json()
             
+            # Başarılı cevap alırsak direkt döndür ve döngüyü bitir
             if "choices" in response_data:
                 bot_reply = response_data["choices"][0]["message"]["content"]
                 return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
             else:
                 son_hata = str(response_data)
-                continue # Bu modelde yetki yoksa veya silindiyse döngüye devam et, diğerini dene
+                continue 
                 
-        # Eğer 3 model de çalışmazsa hatayı döndür
-        return jsonify({"status": "success", "reply": f"Tüm Modeller Hata Verdi: {son_hata}"}), 200
+        # Hiçbiri çalışmazsa (ki imkansız) hatayı bas
+        return jsonify({"status": "success", "reply": f"Sistemdeki modeller hata verdi: {son_hata}"}), 200
             
     except Exception as e:
         return jsonify({
