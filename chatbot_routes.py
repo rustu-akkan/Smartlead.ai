@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.database import chatbot_lead_kaydet
 import re
 import os
-import google.generativeai as genai
+import requests
 
 chatbot_bp = Blueprint('chatbot_bp', __name__)
 
@@ -58,25 +58,34 @@ def ask_chatbot():
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             return jsonify({
-                "status": "success", 
+                "status": "error", 
                 "reply": "Sistem Hatası: Render panelinde GEMINI_API_KEY tanımlanmamış."
             }), 200
 
-        genai.configure(api_key=api_key)
+        # KÜTÜPHANE KULLANMADAN DİREKT GOOGLE'A BAĞLANIYORUZ
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
         
-        # Tüm SDK sürümleriyle %100 uyumlu ve sorunsuz çalışan model
-        model = genai.GenerativeModel('gemini-pro')
+        headers = {'Content-Type': 'application/json'}
         
-        # Sistem notunu manuel olarak birleştiriyoruz (eski sürüm uyumluluğu için)
+        # Sistem promptunu ve kullanıcı mesajını birleştiriyoruz
         full_prompt = f"{SYSTEM_PROMPT}\n\nKullanıcı: {user_message}\nAsistan:"
         
-        response = model.generate_content(full_prompt)
-        bot_reply = response.text.strip()
+        payload = {
+            "contents": [{"parts": [{"text": full_prompt}]}]
+        }
         
-        return jsonify({"status": "success", "reply": bot_reply}), 200
+        response = requests.post(url, headers=headers, json=payload)
+        response_data = response.json()
+        
+        # Yanıtı JSON içinden güvenle çekiyoruz
+        if "candidates" in response_data:
+            bot_reply = response_data["candidates"][0]["content"]["parts"][0]["text"]
+            return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
+        else:
+            return jsonify({"status": "success", "reply": f"API Hata Döndürdü: {response_data}"}), 200
             
     except Exception as e:
         return jsonify({
             "status": "success", 
-            "reply": f"Gemini API Hatası: {str(e)}"
+            "reply": f"Bağlantı Hatası: {str(e)}"
         }), 200
