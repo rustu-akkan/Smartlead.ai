@@ -22,7 +22,6 @@ def ai_yanit_uret(kullanici_id, kullanici_mesaji, resim_yolu=None):
         tam_baglam = f"{Yapilandirma.ISLETME_BAGLAMI}\n{hafiza_metni}"
         icerik_listesi = [tam_baglam, f"Kullanıcı Mesajı: {kullanici_mesaji}"]
         if resim_yolu and os.path.exists(resim_yolu):
-            # Görsel dosyayı Gemini'nin okuyabileceği formata çeviriyoruz
             import PIL.Image
             gorsel = PIL.Image.open(resim_yolu)
             icerik_listesi.append(gorsel)
