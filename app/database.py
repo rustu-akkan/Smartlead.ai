@@ -7,7 +7,7 @@ def _ensure_directories():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     os.makedirs("instance/kullanicilar", exist_ok=True)
 
-def baglanti_kur():
+def get_db_connection():
     _ensure_directories()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -15,7 +15,7 @@ def baglanti_kur():
 
 def init_db(app):
     with app.app_context():
-        conn = baglanti_kur()
+        conn = get_db_connection()
         cursor = conn.cursor()
         
         cursor.executescript("""
@@ -87,8 +87,8 @@ def kullanici_ozel_klasor_olustur(user_id):
     os.makedirs(chats_dir, exist_ok=True)
     return wardrobe_dir, chats_dir
 
-def kullaniciyi_dogrula_veya_kaydet(ad_soyad, telefon, mail, sifre_hash, role="user"):
-    conn = baglanti_kur()
+def upsert_user(ad_soyad, telefon, mail, sifre_hash, role="user"):
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM kullanicilar WHERE telefon = ? OR mail = ?", (telefon, mail))
     row = cursor.fetchone()
@@ -113,7 +113,7 @@ def kullaniciyi_dogrula_veya_kaydet(ad_soyad, telefon, mail, sifre_hash, role="u
     return user_id
 
 def kombin_gecmisi_kaydet(user_id, prompt, response):
-    conn = baglanti_kur()
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO kombin_gecmisi (kullanici_id, istek_detayi, yapay_zeka_yaniti) VALUES (?, ?, ?)",
@@ -122,8 +122,8 @@ def kombin_gecmisi_kaydet(user_id, prompt, response):
     conn.commit()
     conn.close()
 
-def kullanici_durum_guncelle(user_id, is_online):
-    conn = baglanti_kur()
+def update_user_status(user_id, is_online):
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "UPDATE kullanicilar SET is_online = ?, last_active = CURRENT_TIMESTAMP WHERE id = ?",
@@ -132,8 +132,8 @@ def kullanici_durum_guncelle(user_id, is_online):
     conn.commit()
     conn.close()
 
-def kullanici_aktivite_logla(user_id, page_visited, duration=0):
-    conn = baglanti_kur()
+def log_user_activity(user_id, page_visited, duration=0):
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO user_logs (kullanici_id, page_visited, duration_seconds) VALUES (?, ?, ?)",
@@ -143,7 +143,7 @@ def kullanici_aktivite_logla(user_id, page_visited, duration=0):
     conn.close()
 
 def chatbot_lead_kaydet(ad_soyad, telefon, mail):
-    conn = baglanti_kur()
+    conn = get_db_connection()
     cursor = conn.cursor()
     
     cursor.execute(
