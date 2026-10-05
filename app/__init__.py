@@ -1,5 +1,5 @@
 import requests
-from config import Config
+from config import Yapilandirma
 
 class AIServiceError(Exception):
     """AI Servisi hata sınıfı"""
@@ -13,18 +13,18 @@ def ai_service(prompt, history=None):
     :param history: Önceki sohbet geçmişi (list)
     :return: AI tarafından üretilen yanıt metni (str)
     """
-    if not getattr(Config, 'GROQ_API_KEY', None):
-        raise AIServiceError("Groq API anahtarı (.env / Config) tanımlanmamış.")
+    if not getattr(Yapilandirma, 'GROQ_API_KEY', None):
+        raise AIServiceError("Groq API anahtarı (.env / Yapilandirma) tanımlanmamış.")
 
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {Config.GROQ_API_KEY}",
+        "Authorization": f"Bearer {Yapilandirma.GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
 
     # Sistem talimatını ve şirket bağlamını ekliyoruz
     messages = [
-        {"role": "system", "content": getattr(Config, 'BUSINESS_CONTEXT', 'Sen yardımcı bir asistansın.')}
+        {"role": "system", "content": getattr(Yapilandirma, 'BUSINESS_CONTEXT', 'Sen yardımcı bir asistansın.')}
     ]
 
     # Varsa geçmiş konuşmaları listeye ekle
@@ -35,9 +35,9 @@ def ai_service(prompt, history=None):
     # Kullanıcının son mesajını ekle
     messages.append({"role": "user", "content": prompt})
 
-    # Groq OpenAI uyumlu payload yapısı
+    # Groq OpenAI uyumlu payload yapısı - Geçerli bir Groq modeli ile değiştirildi
     payload = {
-        "model": "openai/gpt-oss-120b",
+        "model": "llama3-8b-8192", 
         "messages": messages,
         "max_tokens": 500,
         "temperature": 0.7
