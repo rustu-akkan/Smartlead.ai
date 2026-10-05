@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from database import init_db, upsert_user, get_db_connection, update_user_status, log_user_activity
+from app.database import init_db, upsert_user, get_db_connection, update_user_status, log_user_activity
 from chatbot_routes import chatbot_bp
 
 app = Flask(__name__)
