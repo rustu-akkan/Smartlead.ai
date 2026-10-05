@@ -64,21 +64,19 @@ def ask_chatbot():
             'Content-Type': 'application/json'
         }
         
-        # --- ZEKİCE ÇÖZÜM: TAHMİN ETMEYİ BIRAKIYORUZ ---
-        # 1. Groq'a "Şu an benim API anahtarıma açık olan modeller neler?" diye soruyoruz
+        # 1. Groq'a açık olan modelleri soruyoruz
         models_url = "https://api.groq.com/openai/v1/models"
         models_response = requests.get(models_url, headers=headers)
         models_data = models_response.json()
         
         aktif_modeller = []
         if "data" in models_data:
-            # Bize izin verdiği tüm modellerin isimlerini alıyoruz (ses işleyen whisper hariç)
             aktif_modeller = [m["id"] for m in models_data["data"] if "whisper" not in m["id"].lower()]
         
         if not aktif_modeller:
             return jsonify({"status": "success", "reply": "Groq API hesabınızda kullanılabilir model bulunamadı."}), 200
 
-        # 2. Groq'un bize verdiği bu "kesin yetkimiz olan" modelleri sırayla deniyoruz
+        # 2. Garantili ve güvenli for döngüsü: Sırayla dene, ilk başarılı olanda dur
         url = "https://api.groq.com/openai/v1/chat/completions"
         son_hata = ""
         
@@ -102,8 +100,8 @@ def ask_chatbot():
                 son_hata = str(response_data)
                 continue 
                 
-        # Hiçbiri çalışmazsa (ki imkansız) hatayı bas
-        return jsonify({"status": "success", "reply": f"Sistemdeki modeller hata verdi: {son_hata}"}), 200
+        # Bütün modeller hata verirse son hatayı döndür
+        return jsonify({"status": "success", "reply": f"Sistemdeki modeller şu an yoğun, lütfen tekrar deneyin. Detay: {son_hata}"}), 200
             
     except Exception as e:
         return jsonify({
