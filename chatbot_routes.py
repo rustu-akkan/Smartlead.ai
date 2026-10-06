@@ -68,7 +68,7 @@ def ask_chatbot():
     except Exception as e:
         son_hata += f"Gemini Hatası: {str(e)} | "
 
-    # 2. YÖNTEM: GROQ VE OPENAI UYUMLU TÜM MODELLER (Sırayla hepsini dener)
+    # 2. YÖNTEM: GROQ (Güncel production modelleri sırayla denenir)
     try:
         groq_key = os.getenv("GROQ_API_KEY")
         if groq_key:
@@ -77,17 +77,10 @@ def ask_chatbot():
                 'Content-Type': 'application/json'
             }
             
-            # Dünyada ne kadar güncel ve aktif model varsa hepsini buraya yığdık
+            # Groq'un güncel production modelleri (biri çalışmazsa diğerine geçer)
             tum_modeller = [
-                "llama-3.3-70b-versatile",
-                "llama-3.1-8b-instant",
-                "llama-3.1-70b-versatile",
-                "gemma2-9b-it",
-                "llama3-8b-8192",
-                "llama3-70b-8192",
-                "mixtral-8x7b-32768",
-                "llama-3.2-3b-preview",
-                "llama-3.2-1b-preview"
+                "openai/gpt-oss-120b",
+                "openai/gpt-oss-20b"
             ]
             
             url = "https://api.groq.com/openai/v1/chat/completions"
@@ -98,10 +91,12 @@ def ask_chatbot():
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_message}
-                    ]
+                    ],
+                    "max_tokens": 600,
+                    "reasoning_effort": "low"
                 }
                 try:
-                    r = requests.post(url, json=payload, headers=headers, timeout=5)
+                    r = requests.post(url, json=payload, headers=headers, timeout=15)
                     r_data = r.json()
                     if r.status_code == 200 and "choices" in r_data:
                         reply = r_data["choices"][0]["message"]["content"]
