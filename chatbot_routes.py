@@ -8,7 +8,8 @@ chatbot_bp = Blueprint('chatbot_bp', __name__)
 
 EMAIL_REGEX = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
-SYSTEM_PROMPT = """Sen VibeThread e-ticaret sitesinin resmi, akıllı ve kibar AI rehber asistanısın."""
+SYSTEM_PROMPT = """Sen VibeThread e-ticaret sitesinin resmi, akıllı ve kibar AI rehber asistanısın.
+Kullanıcılara sıfır iade sistemi, AI kombin motoru ve beden rehberi hakkında akıcı, profesyonel ve yardımcı yanıtlar ver."""
 
 @chatbot_bp.route('/api/chatbot/lead', methods=['POST'])
 def save_chatbot_lead():
@@ -48,53 +49,73 @@ def ask_chatbot():
     if not user_message:
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
+    son_hata = ""
+
+    # 1. YÖNTEM: GOOGLE GEMINI API (Eğer Render'da GEMINI_API_KEY varsa direkt buradan dener)
     try:
-        try:
-            from config import Yapilandirma
-            api_key = Yapilandirma.GROQ_API_KEY
-        except:
-            api_key = os.getenv("GROQ_API_KEY")
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if gemini_key:
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+            gemini_payload = {
+                "contents": [{"parts": [{"text": f"{SYSTEM_PROMPT}\n\nKullanıcı: {user_message}"}]}]
+            }
+            res = requests.post(gemini_url, json=gemini_payload, headers={'Content-Type': 'application/json'}, timeout=6)
+            if res.status_code == 200:
+                data_res = res.json()
+                if "candidates" in data_res:
+                    reply = data_res["candidates"][0]["content"]["parts"][0]["text"]
+                    return jsonify({"status": "success", "reply": reply.strip()}), 200
+    except Exception as e:
+        son_hata += f"Gemini Hatası: {str(e)} | "
 
-        # SUNUM KURTARICI: Groq API kilitliyse bile ekranda hata görünmeyecek, bu gerçekçi metin dönecek
-        acil_durum_cevabi = "Merhaba! Ben VibeThread yapay zeka stil danışmanınızım. Şu an sistemlerimizde yoğun bir stil analizi trafiği var, ancak VibeThread'in sıfır iade politikası ve akıllı beden rehberi sizin için her an devrede. Dijital gardırobunuzu oluşturmak için menüden işlemlere devam edebilirsiniz!"
-
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
-        }
-        
-        aktif_modeller = [
-            "llama-3.1-8b-instant",
-            "llama3-8b-8192"
-        ]
-        
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        
-        if api_key:
-            for model_ismi in aktif_modeller:
+    # 2. YÖNTEM: GROQ VE OPENAI UYUMLU TÜM MODELLER (Sırayla hepsini dener)
+    try:
+        groq_key = os.getenv("GROQ_API_KEY")
+        if groq_key:
+            headers = {
+                'Authorization': f'Bearer {groq_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            # Dünyada ne kadar güncel ve aktif model varsa hepsini buraya yığdık
+            tum_modeller = [
+                "llama-3.3-70b-versatile",
+                "llama-3.1-8b-instant",
+                "llama-3.1-70b-versatile",
+                "gemma2-9b-it",
+                "llama3-8b-8192",
+                "llama3-70b-8192",
+                "mixtral-8x7b-32768",
+                "llama-3.2-3b-preview",
+                "llama-3.2-1b-preview"
+            ]
+            
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            
+            for m in tum_modeller:
                 payload = {
-                    "model": model_ismi, 
+                    "model": m,
                     "messages": [
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": user_message}
                     ]
                 }
-                
                 try:
-                    response = requests.post(url, json=payload, headers=headers, timeout=5)
-                    if response.status_code == 200:
-                        response_data = response.json()
-                        if "choices" in response_data:
-                            bot_reply = response_data["choices"][0]["message"]["content"]
-                            return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
-                except:
-                    continue 
-                
-        # Bütün döngü çöker veya Groq yetki vermezse hatayı yut ve kurtarıcı metni bas
-        return jsonify({"status": "success", "reply": acil_durum_cevabi}), 200
-            
+                    r = requests.post(url, json=payload, headers=headers, timeout=5)
+                    r_data = r.json()
+                    if r.status_code == 200 and "choices" in r_data:
+                        reply = r_data["choices"][0]["message"]["content"]
+                        return jsonify({"status": "success", "reply": reply.strip()}), 200
+                    else:
+                        son_hata += f"Model {m}: {str(r_data.get('error', {}).get('message', 'Hata'))} | "
+                except Exception as ex:
+                    son_hata += f"Model {m} İstisna: {str(ex)} | "
+                    continue
     except Exception as e:
-        return jsonify({
-            "status": "success", 
-            "reply": "Merhaba! VibeThread asistanı olarak şu an arka plan güncellemeleri yapıyorum. Kombin işlemlerinize panelden kesintisiz devam edebilirsiniz."
-        }), 200
+        son_hata += f"Groq Genel Hata: {str(e)} | "
+
+    # Eğer akıllı ağdaki hiçbir modelden yanıt dönemezse detaylı hatayı döner
+    return jsonify({
+        "status": "success", 
+        "reply": f"Tüm yapay zeka modelleri ve ağlar denendi ancak erişim sağlanamadı. Detay: {son_hata}"
+    }), 200
