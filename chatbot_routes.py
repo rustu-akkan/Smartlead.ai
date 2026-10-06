@@ -69,16 +69,21 @@ def ask_chatbot():
             'Content-Type': 'application/json'
         }
         
-        # Güncel ve yetki sorunu yaratmayan sağlam modellerin listesi
-        
+        # Olası tüm Groq modellerini listeye ekledik. Sistem sırayla deneyecek.
         aktif_modeller = [
-            "llama-3.2-3b-preview"
+            "gemma2-9b-it",
+            "llama-3.1-70b-versatile",
+            "llama-3.2-1b-preview",
+            "llama-3.2-11b-text-preview",
+            "llama3-70b-8192",
+            "llama-3.1-8b-instant",
+            "llama-3.3-70b-versatile"
         ]
         
-
         url = "https://api.groq.com/openai/v1/chat/completions"
         son_hata = ""
         
+        # Hepsini tek tek dene, ilk 200 (Başarılı) dönende cevabı ver ve çık
         for model_ismi in aktif_modeller:
             payload = {
                 "model": model_ismi, 
@@ -88,17 +93,22 @@ def ask_chatbot():
                 ]
             }
             
-            response = requests.post(url, json=payload, headers=headers)
-            response_data = response.json()
-            
-            if response.status_code == 200 and "choices" in response_data:
-                bot_reply = response_data["choices"][0]["message"]["content"]
-                return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
-            else:
-                son_hata = str(response_data)
-                continue 
+            try:
+                response = requests.post(url, json=payload, headers=headers)
+                response_data = response.json()
                 
-        return jsonify({"status": "success", "reply": f"Modeller şu an cevap veremiyor. Hata detayı: {son_hata}"}), 200
+                if response.status_code == 200 and "choices" in response_data:
+                    bot_reply = response_data["choices"][0]["message"]["content"]
+                    return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
+                else:
+                    son_hata = str(response_data)
+                    continue 
+            except Exception as e:
+                son_hata = str(e)
+                continue
+                
+        # Eğer kıyamet kopar da hiçbiri çalışmazsa:
+        return jsonify({"status": "success", "reply": f"Modeller şu an cevap veremiyor. Son Hata: {son_hata}"}), 200
             
     except Exception as e:
         return jsonify({
