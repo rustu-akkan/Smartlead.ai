@@ -55,31 +55,33 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        api_key = os.getenv("GROQ_API_KEY")
+        # API anahtarını güvenli bir şekilde alıyoruz
+        try:
+            from config import Yapilandirma
+            api_key = Yapilandirma.GROQ_API_KEY
+        except:
+            api_key = os.getenv("GROQ_API_KEY")
+
         if not api_key:
-            return jsonify({"status": "success", "reply": "Sistem Hatası: Render'da GROQ_API_KEY bulunamadı."}), 200
+            return jsonify({"status": "success", "reply": "Sistem Hatası: Render veya Config içinde GROQ_API_KEY bulunamadı."}), 200
 
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
         
-        # 1. Groq'a açık olan modelleri soruyoruz
-        models_url = "https://api.groq.com/openai/v1/models"
-        models_response = requests.get(models_url, headers=headers)
-        models_data = models_response.json()
-        
-        aktif_modeller = []
-        if "data" in models_data:
-            aktif_modeller = [m["id"] for m in models_data["data"] if "whisper" not in m["id"].lower()]
-        
-        if not aktif_modeller:
-            return jsonify({"status": "success", "reply": "Groq API hesabınızda kullanılabilir model bulunamadı."}), 200
+        # Kesin çalışan ve yüksek hızlı Groq modellerini koda gömüyoruz
+        aktif_modeller = [
+            "llama3-8b-8192",
+            "llama3-70b-8192",
+            "mixtral-8x7b-32768",
+            "gemma-7b-it"
+        ]
 
-        # 2. Garantili ve güvenli for döngüsü: Sırayla dene, ilk başarılı olanda dur
         url = "https://api.groq.com/openai/v1/chat/completions"
         son_hata = ""
         
+        # Modelleri sırayla gez ve ilk çalışan modelin cevabını döndür
         for model_ismi in aktif_modeller:
             payload = {
                 "model": model_ismi, 
@@ -92,7 +94,6 @@ def ask_chatbot():
             response = requests.post(url, json=payload, headers=headers)
             response_data = response.json()
             
-            # Başarılı cevap alırsak direkt döndür ve döngüyü bitir
             if "choices" in response_data:
                 bot_reply = response_data["choices"][0]["message"]["content"]
                 return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
@@ -100,8 +101,8 @@ def ask_chatbot():
                 son_hata = str(response_data)
                 continue 
                 
-        # Bütün modeller hata verirse son hatayı döndür
-        return jsonify({"status": "success", "reply": f"Sistemdeki modeller şu an yoğun, lütfen tekrar deneyin. Detay: {son_hata}"}), 200
+        # Eğer koda gömdüğümüz tüm modeller çökerse
+        return jsonify({"status": "success", "reply": f"Modeller şu an cevap veremiyor. Hata detayı: {son_hata}"}), 200
             
     except Exception as e:
         return jsonify({
