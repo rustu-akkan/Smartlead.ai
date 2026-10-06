@@ -55,7 +55,6 @@ def ask_chatbot():
         return jsonify({"status": "error", "message": "Boş bir mesaj gönderilemez."}), 400
         
     try:
-        # API anahtarını güvenli bir şekilde alıyoruz
         try:
             from config import Yapilandirma
             api_key = Yapilandirma.GROQ_API_KEY
@@ -70,12 +69,16 @@ def ask_chatbot():
             'Content-Type': 'application/json'
         }
         
-        aktif_modeller = ["llama-3.1-8b-instant"]
+        # Güncel ve yetki sorunu yaratmayan sağlam modellerin listesi
+        aktif_modeller = [
+            "llama-3.1-70b-versatile",
+            "gemma2-9b-it",
+            "llama3-groq-70b-8192-tool-use-preview"
+        ]
 
         url = "https://api.groq.com/openai/v1/chat/completions"
         son_hata = ""
         
-        # Modelleri sırayla gez ve ilk çalışan modelin cevabını döndür
         for model_ismi in aktif_modeller:
             payload = {
                 "model": model_ismi, 
@@ -88,14 +91,13 @@ def ask_chatbot():
             response = requests.post(url, json=payload, headers=headers)
             response_data = response.json()
             
-            if "choices" in response_data:
+            if response.status_code == 200 and "choices" in response_data:
                 bot_reply = response_data["choices"][0]["message"]["content"]
                 return jsonify({"status": "success", "reply": bot_reply.strip()}), 200
             else:
                 son_hata = str(response_data)
                 continue 
                 
-        # Eğer koda gömdüğümüz tüm modeller çökerse
         return jsonify({"status": "success", "reply": f"Modeller şu an cevap veremiyor. Hata detayı: {son_hata}"}), 200
             
     except Exception as e:
