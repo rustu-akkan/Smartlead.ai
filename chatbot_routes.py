@@ -70,12 +70,12 @@ def ask_chatbot():
             'Content-Type': 'application/json'
         }
         
-        # Kesin çalışan ve yüksek hızlı Groq modellerini koda gömüyoruz
+        # Kesin çalışan, en güncel Groq modelleri
         aktif_modeller = [
+            "llama-3.1-8b-instant",
+            "llama-3.1-70b-versatile",
             "llama3-8b-8192",
-            "llama3-70b-8192",
-            "mixtral-8x7b-32768",
-            "gemma-7b-it"
+            "mixtral-8x7b-32768"
         ]
 
         url = "https://api.groq.com/openai/v1/chat/completions"
