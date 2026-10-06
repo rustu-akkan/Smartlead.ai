@@ -71,9 +71,7 @@ def ask_chatbot():
         
         # Güncel ve yetki sorunu yaratmayan sağlam modellerin listesi
         aktif_modeller = [
-            "llama-3.1-70b-versatile",
-            "gemma2-9b-it",
-            "llama3-groq-70b-8192-tool-use-preview"
+            "llama-3.3-70b-versatile"
         ]
 
         url = "https://api.groq.com/openai/v1/chat/completions"
